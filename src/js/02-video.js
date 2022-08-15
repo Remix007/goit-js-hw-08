@@ -1,31 +1,30 @@
-import Player from '@vimeo/player'; // импорт библиотек
-import throttle from 'lodash.throttle'; // импорт библиотек
-
+const _ = require('lodash');
 const iframe = document.querySelector('iframe');
-const player = new Player(iframe);
-//отслеживаем событие timeupdate и вешаем на фукуию throttle
-player.on(
-  'timeupdate',
-  throttle(function (data) {
-    console.log('played the video!');
-    //зписываем в localStorage из обьекта значение секунд data.seconds
-    localStorage.setItem('videoplayer-current-time', data.seconds);
-  }),
-  500
-);
-//берем название ролика
-player.getVideoTitle().then(function (title) {
-  console.log('title:', title);
-});
-//вызываем созданную нами функцию
-chekedSaveTime();
+const player = new Vimeo.Player(iframe);
+const LOCALSTORAGE_KEY = 'videoplayer-current-time';
 
-function chekedSaveTime() {
-  //создаем перменную time и записываем в нее значение из localStorage
-  const time = localStorage.getItem('videoplayer-current-time');
-  if (time !== null) {
-    //если не равно null, то на player вешаем его встроенную фукцию setCurrentTime с переменной
-    //time, которую преобразуем в число с помощью Number
-    player.setCurrentTime(Number(time));
-  }
-}
+const onPlay = function (data) {
+  // data is an object containing properties specific to that event
+  localStorage.setItem(LOCALSTORAGE_KEY, data.seconds);
+};
+
+const throttledOnOnPlay = _.throttle(onPlay, 1000);
+
+player.on('timeupdate', throttledOnOnPlay);
+
+player
+  .setCurrentTime(localStorage.getItem(LOCALSTORAGE_KEY))
+  .then(function (seconds) {
+    // seconds = the actual time that the player seeked to
+  })
+  .catch(function (error) {
+    switch (error.name) {
+      case 'RangeError':
+        // the time was less than 0 or greater than the video's duration
+        break;
+
+      default:
+        // some other error occurred
+        break;
+    }
+  });

@@ -1,54 +1,44 @@
-import throttle from 'lodash.throttle';
+const _ = require('lodash');
 
 const form = document.querySelector('.feedback-form');
-const inputEmail = document.querySelector('.feedback-form input');
-const textareaMessage = document.querySelector('.feedback-form textarea');
+const email = document.querySelector('input');
+const message = document.querySelector('textarea');
+const LOCALSTORAGE_KEY = 'feedback-form-state';
 
-form.addEventListener('submit', onFormSubmint);
-form.addEventListener('input', throttle(onFormInput, 500));
+const throttledOnSaveInLocalStorage = _.throttle(saveInLocalStorage, 500);
 
-populateTextInput(); //вызов фукции, которая подставляет значения из localStorage
+form.addEventListener('input', throttledOnSaveInLocalStorage);
+form.addEventListener('submit', onSubmitClick);
 
-function onFormSubmint(event) {
-  event.preventDefault();
-  //деструктуризация и вывод в консоль обьекта введенных данных
-  const {
-    elements: { email, message },
-  } = event.currentTarget;
-  const dataObj = { email: email.value, message: message.value };
+const object = {
+  email: null,
+  message: null,
+};
 
-  console.log(dataObj);
-  //очистка input and textarea
-  event.currentTarget.reset();
-  //очистка localStorage
-  localStorage.removeItem('feedback-form-state');
+function saveInLocalStorage(e) {
+  object.email = form.elements.email.value;
+  object.message = form.elements.message.value;
+  localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(object));
 }
 
-function onFormInput() {
-  //делаем дистриктуризацию
-  const {
-    elements: { email, message },
-  } = form;
-  //сздаем обьект и присваиваем ему введенные значения input and textarea
-  const dataObj = { email: email.value, message: message.value };
-  //записываем обьект в localStorage, но при это с помощью JSON.stringify преобразуем его в строку
-  localStorage.setItem('feedback-form-state', JSON.stringify(dataObj));
+updateEmailAndMessageValue();
+
+function updateEmailAndMessageValue() {
+  const saveLocalStorageValues = localStorage.getItem(LOCALSTORAGE_KEY);
+  const parsedLocalStorageValues = JSON.parse(saveLocalStorageValues);
+
+  try {
+    email.value = parsedLocalStorageValues.email;
+  } catch (error) {}
+
+  try {
+    message.value = parsedLocalStorageValues.message;
+  } catch (error) {}
 }
-//фукции, которая подставляет значения из localStorage в input and textarea
-function populateTextInput() {
-  //создаем переменную, в которую записываем значение из localStorage
-  const savedText = localStorage.getItem('feedback-form-state');
-  //преобразуем значение в обьект
-  const parseText = JSON.parse(savedText);
-  //если в localStorage есть savedText, то присваиваем input and textarea значения из обьекта parseText
-  if (savedText) {
-    // inputEmail.value = parseText.email;
-    // textareaMessage.value = parseText.message;
-    const formEl = form.elements;
-    for (const key in parseText) {
-      if (parseText.hasOwnProperty(key)) {
-        formEl[key].value = parseText[key];
-      }
-    }
-  }
+
+function onSubmitClick(evt) {
+  evt.preventDefault();
+  console.log(JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY)));
+  localStorage.clear();
+  form.reset();
 }
