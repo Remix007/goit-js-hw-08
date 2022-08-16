@@ -1,44 +1,42 @@
-const _ = require('lodash');
+import throttle from 'lodash.throttle';
 
 const form = document.querySelector('.feedback-form');
-const email = document.querySelector('input');
-const message = document.querySelector('textarea');
-const LOCALSTORAGE_KEY = 'feedback-form-state';
+const inputEmail = document.querySelector('.feedback-form input');
+const textareaMessage = document.querySelector('.feedback-form textarea');
 
-const throttledOnSaveInLocalStorage = _.throttle(saveInLocalStorage, 500);
+form.addEventListener('submit', onFormSubmint);
+form.addEventListener('input', throttle(onFormInput, 500));
 
-form.addEventListener('input', throttledOnSaveInLocalStorage);
-form.addEventListener('submit', onSubmitClick);
+populateTextInput();
 
-const object = {
-  email: null,
-  message: null,
-};
+function onFormSubmint(event) {
+  event.preventDefault();
+  const {
+    elements: { email, message },
+  } = event.currentTarget;
+  const dataObj = { email: email.value, message: message.value };
 
-function saveInLocalStorage(e) {
-  object.email = form.elements.email.value;
-  object.message = form.elements.message.value;
-  localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(object));
+  console.log(dataObj);
+  event.currentTarget.reset();
+  localStorage.removeItem('feedback-form-state');
 }
 
-updateEmailAndMessageValue();
-
-function updateEmailAndMessageValue() {
-  const saveLocalStorageValues = localStorage.getItem(LOCALSTORAGE_KEY);
-  const parsedLocalStorageValues = JSON.parse(saveLocalStorageValues);
-
-  try {
-    email.value = parsedLocalStorageValues.email;
-  } catch (error) {}
-
-  try {
-    message.value = parsedLocalStorageValues.message;
-  } catch (error) {}
+function onFormInput() {
+  const {
+    elements: { email, message },
+  } = form;
+  const dataObj = { email: email.value, message: message.value };
+  localStorage.setItem('feedback-form-state', JSON.stringify(dataObj));
 }
-
-function onSubmitClick(evt) {
-  evt.preventDefault();
-  console.log(JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY)));
-  localStorage.clear();
-  form.reset();
+function populateTextInput() {
+  const savedText = localStorage.getItem('feedback-form-state');
+  const parseText = JSON.parse(savedText);
+  if (savedText) {
+    const formEl = form.elements;
+    for (const key in parseText) {
+      if (parseText.hasOwnProperty(key)) {
+        formEl[key].value = parseText[key];
+      }
+    }
+  }
 }
